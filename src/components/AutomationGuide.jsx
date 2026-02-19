@@ -1,20 +1,75 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { drawWallpaper } from '../lib/generateWallpaper.js'
 
-// iPhone Models พร้อมขนาดหน้าจอ
-const IPHONE_MODELS = [
-  { label: 'iPhone 15 / 15 Pro / 16', width: 1179, height: 2556 },
-  { label: 'iPhone 15 Plus / 15 Pro Max / 16 Plus / 16 Pro Max', width: 1290, height: 2796 },
-  { label: 'iPhone 14 / 14 Pro', width: 1170, height: 2532 },
-  { label: 'iPhone 14 Plus / 14 Pro Max', width: 1284, height: 2778 },
-  { label: 'iPhone 13 / 13 Pro / 12 / 12 Pro', width: 1170, height: 2532 },
-  { label: 'iPhone 13 Pro Max / 12 Pro Max', width: 1284, height: 2778 },
-  { label: 'iPhone 13 mini / 12 mini', width: 1080, height: 2340 },
-  { label: 'iPhone SE (2nd/3rd gen)', width: 750, height: 1334 },
-  { label: 'iPhone 11 Pro / XS / X', width: 1125, height: 2436 },
-  { label: 'iPhone 11 Pro Max / XS Max', width: 1242, height: 2688 },
-  { label: 'iPhone 11 / XR', width: 828, height: 1792 },
+// Device Groups
+const DEVICE_GROUPS = [
+  {
+    group: 'Apple iPhone',
+    models: [
+      { label: 'iPhone 16 Pro Max', width: 1320, height: 2868 },
+      { label: 'iPhone 16 Pro', width: 1206, height: 2622 },
+      { label: 'iPhone 16 Plus / 15 Plus / 15 Pro Max / 16 Pro Max (alt)', width: 1290, height: 2796 },
+      { label: 'iPhone 16 / 15 / 15 Pro', width: 1179, height: 2556 },
+      { label: 'iPhone 14 Pro Max / 13 Pro Max / 12 Pro Max', width: 1284, height: 2778 },
+      { label: 'iPhone 14 Pro / 13 Pro / 13 / 12 Pro / 14', width: 1170, height: 2532 },
+      { label: 'iPhone 13 mini / 12 mini', width: 1080, height: 2340 },
+      { label: 'iPhone SE (2nd/3rd gen)', width: 750, height: 1334 },
+      { label: 'iPhone 11 Pro / XS / X', width: 1125, height: 2436 },
+      { label: 'iPhone 11 Pro Max / XS Max', width: 1242, height: 2688 },
+      { label: 'iPhone 11 / XR', width: 828, height: 1792 },
+    ],
+  },
+  {
+    group: 'Samsung Galaxy S',
+    models: [
+      { label: 'Galaxy S25 Ultra', width: 1440, height: 3120 },
+      { label: 'Galaxy S25+ / S24+', width: 1080, height: 2340 },
+      { label: 'Galaxy S25 / S24 / S23', width: 1080, height: 2340 },
+      { label: 'Galaxy S24 Ultra / S23 Ultra', width: 1440, height: 3088 },
+      { label: 'Galaxy S22 Ultra', width: 1080, height: 2340 },
+      { label: 'Galaxy S22+ / S21+', width: 1080, height: 2400 },
+      { label: 'Galaxy S22 / S21 / S20', width: 1080, height: 2400 },
+    ],
+  },
+  {
+    group: 'Samsung Galaxy A',
+    models: [
+      { label: 'Galaxy A55 / A54 / A53', width: 1080, height: 2340 },
+      { label: 'Galaxy A35 / A34', width: 1080, height: 2340 },
+      { label: 'Galaxy A15 / A14', width: 1080, height: 2340 },
+    ],
+  },
+  {
+    group: 'Google Pixel',
+    models: [
+      { label: 'Pixel 9 Pro XL / 8 Pro', width: 1344, height: 2992 },
+      { label: 'Pixel 9 Pro / 9 / 8', width: 1080, height: 2400 },
+      { label: 'Pixel 9 Pro Fold', width: 1080, height: 2424 },
+      { label: 'Pixel 7 Pro / 6 Pro', width: 1440, height: 3120 },
+      { label: 'Pixel 7 / 6', width: 1080, height: 2400 },
+    ],
+  },
+  {
+    group: 'Xiaomi',
+    models: [
+      { label: 'Xiaomi 15 Ultra / 14 Ultra', width: 1440, height: 3200 },
+      { label: 'Xiaomi 15 / 14', width: 1080, height: 2400 },
+      { label: 'Redmi Note 13 / 12 Pro', width: 1080, height: 2400 },
+      { label: 'Redmi 13C / 12C', width: 720, height: 1600 },
+    ],
+  },
+  {
+    group: 'OnePlus',
+    models: [
+      { label: 'OnePlus 13 / 12', width: 1440, height: 3168 },
+      { label: 'OnePlus 13R / 12R', width: 1080, height: 2392 },
+      { label: 'OnePlus Nord 4 / CE 4', width: 1080, height: 2412 },
+    ],
+  },
 ]
+
+// Flat list สำหรับ search
+const ALL_DEVICES = DEVICE_GROUPS.flatMap(g => g.models)
 
 // Layout Styles
 const LAYOUT_STYLES = [
@@ -25,7 +80,8 @@ const LAYOUT_STYLES = [
 
 export default function AutomationGuide() {
   const [layoutStyle, setLayoutStyle] = useState(LAYOUT_STYLES[0])
-  const [iphoneModel, setIphoneModel] = useState(IPHONE_MODELS[0])
+  const [iphoneModel, setIphoneModel] = useState(DEVICE_GROUPS[0].models[0])
+  const [detectedDevice, setDetectedDevice] = useState(null)
   
   // Customization states
   const [cellSize, setCellSize] = useState(50)
@@ -87,6 +143,27 @@ export default function AutomationGuide() {
     navigator.clipboard.writeText(wallpaperUrl)
       // .then(() => alert('URL copied to clipboard! 📋'))
       .catch(err => console.error('Failed to copy:', err))
+  }
+
+  const detectScreenSize = () => {
+    const dpr = window.devicePixelRatio || 1
+    const pw = Math.round(screen.width * dpr)
+    const ph = Math.round(screen.height * dpr)
+    // ensure portrait (width < height)
+    const detW = Math.min(pw, ph)
+    const detH = Math.max(pw, ph)
+
+    // หา match ใน ALL_DEVICES
+    const match = ALL_DEVICES.find(m => m.width === detW && m.height === detH)
+    if (match) {
+      setIphoneModel(match)
+      setDetectedDevice({ width: detW, height: detH, matched: match.label })
+    } else {
+      // ใช้ขนาดที่ detect ได้เป็น custom model
+      const custom = { label: `This Device (${detW}×${detH})`, width: detW, height: detH }
+      setIphoneModel(custom)
+      setDetectedDevice({ width: detW, height: detH, matched: null })
+    }
   }
 
   // Preview rendering
@@ -159,9 +236,9 @@ export default function AutomationGuide() {
   return (
     <section className="automation-guide">
       <div className="container">
-        <h2>Automated Wallpaper Setup for iPhone</h2>
+        <h2>Automated Wallpaper Setup</h2>
         <p className="muted">
-          สร้างวอลเปเปอร์ที่อัปเดตอัตโนมัติทุกวันบน iPhone ของคุณ
+          สร้างวอลเปเปอร์ที่อัปเดตอัตโนมัติทุกวันบน iPhone และ Android ของคุณ
         </p>
 
         <div className="steps-container">
@@ -194,19 +271,44 @@ export default function AutomationGuide() {
                   </label>
 
                   <label className="form-label">
-                    <span className="label-text">iPhone Model</span>
+                    <span className="label-text">Device</span>
                     <select 
                       className="select-input"
                       value={iphoneModel.label} 
-                      onChange={e => setIphoneModel(IPHONE_MODELS.find(m => m.label === e.target.value))}
+                      onChange={e => {
+                        const found = ALL_DEVICES.find(m => m.label === e.target.value)
+                        if (found) { setIphoneModel(found); setDetectedDevice(null) }
+                      }}
                     >
-                      {IPHONE_MODELS.map(model => (
-                        <option key={model.label} value={model.label}>
-                          {model.label}
-                        </option>
+                      {/* ถ้า detect ได้ custom model ที่ไม่มีในลิสต์ ให้แสดงเป็น option */}
+                      {detectedDevice && !ALL_DEVICES.find(m => m.width === detectedDevice.width && m.height === detectedDevice.height) && (
+                        <optgroup label="Detected">
+                          <option value={iphoneModel.label}>{iphoneModel.label}</option>
+                        </optgroup>
+                      )}
+                      {DEVICE_GROUPS.map(group => (
+                        <optgroup key={group.group} label={group.group}>
+                          {group.models.map(model => (
+                            <option key={model.label} value={model.label}>
+                              {model.label}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
                     </select>
                   </label>
+
+                  <button className="detect-btn" onClick={detectScreenSize}>
+                    📱 Use This Device
+                  </button>
+
+                  {detectedDevice && (
+                    <div className={`info-badge ${detectedDevice.matched ? 'badge-success' : 'badge-custom'}`}>
+                      {detectedDevice.matched
+                        ? `✓ Matched: ${detectedDevice.matched}`
+                        : `✓ Custom: ${detectedDevice.width}×${detectedDevice.height}`}
+                    </div>
+                  )}
 
                   <div className="info-badge">
                     Resolution: {iphoneModel.width} × {iphoneModel.height}
