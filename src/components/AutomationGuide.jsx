@@ -85,7 +85,7 @@ export default function AutomationGuide() {
 
   const copyToClipboard = () => {
     navigator.clipboard.writeText(wallpaperUrl)
-      .then(() => alert('URL copied to clipboard! 📋'))
+      // .then(() => alert('URL copied to clipboard! 📋'))
       .catch(err => console.error('Failed to copy:', err))
   }
 
