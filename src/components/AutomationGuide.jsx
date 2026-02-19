@@ -56,11 +56,11 @@ export default function AutomationGuide() {
     else if (layoutStyle.value === 'months') setColumns(4)
   }, [layoutStyle])
 
-  // สร้าง URL สำหรับ wallpaper
+  // สร้าง URL สำหรับ wallpaper — ชี้ไปที่ /api/wallpaper ซึ่ง return PNG โดยตรง
+  // (ทำให้ iOS Shortcuts "Get Contents of URL" ได้รูปภาพ ไม่ใช่ HTML page)
   const wallpaperUrl = useMemo(() => {
-    const baseUrl = window.location.origin + window.location.pathname.replace(/\/$/, '')
+    const baseUrl = window.location.origin
     const params = new URLSearchParams({
-      view: 'wallpaper',
       height: iphoneModel.height,
       width: iphoneModel.width,
       style: layoutStyle.value,
@@ -80,9 +80,7 @@ export default function AutomationGuide() {
       showPercent: showPercent ? '1' : '0',
     })
     
-    // weeks mode ไม่ต้องส่ง birthDate อีกต่อไป (ใช้ week of year แทน)
-    
-    return `${baseUrl}?${params.toString()}`
+    return `${baseUrl}/api/wallpaper?${params.toString()}`
   }, [layoutStyle, iphoneModel, cellSize, gap, radius, dotScale, shape, columns, bg0, bg1, pastColor, currentColor, futureColor, futureOpacity, customText, showPercent])
 
   const copyToClipboard = () => {
